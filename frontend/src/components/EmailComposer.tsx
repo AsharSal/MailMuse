@@ -21,8 +21,8 @@ const EmailComposer: React.FC = () => {
   const [copySuccess, setCopySuccess] = useState(false);
 
   const handleGenerate = async () => {
-    if (!prompt) {
-      setError('Please enter your email prompt');
+    if (!prompt || !selectedTone) {
+      setError('Please enter your prompt and select a tone.');
       return;
     }
 
@@ -50,6 +50,7 @@ const EmailComposer: React.FC = () => {
       setCopySuccess(true);
       setTimeout(() => setCopySuccess(false), 2000);
     } catch (err) {
+      console.log('Failed to copy: ', err);
       setError('Failed to copy to clipboard');
     }
   };
@@ -72,7 +73,7 @@ const EmailComposer: React.FC = () => {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Tone (Optional)
+            Tone
           </label>
           <select
             value={selectedTone}

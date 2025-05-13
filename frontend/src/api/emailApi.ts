@@ -4,7 +4,7 @@ const API_BASE_URL = 'http://localhost:5000/api';
 
 interface EmailRequest {
     prompt: string;
-    tone?: string;
+    tone: string;
     variables?: Record<string, string>;
 }
 
