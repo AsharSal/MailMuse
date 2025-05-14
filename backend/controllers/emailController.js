@@ -2,6 +2,41 @@ const EmailPrompt = require('../models/EmailPrompt');
 const EmailTemplate = require('../models/EmailTemplate');
 const { generateEmail } = require('../services/geminiService');
 
+exports.getAllPrompts = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 5;
+    const offset = (page - 1) * limit;
+
+    const { count, rows: prompts } = await EmailPrompt.findAndCountAll({
+      include: [
+        {
+          model: EmailTemplate,
+          as: 'template',
+          attributes: ['name', 'structure']
+        }
+      ],
+      order: [['createdAt', 'DESC']],
+      limit,
+      offset
+    });
+    
+    res.json({
+      success: true,
+      data: prompts,
+      pagination: {
+        total: count,
+        page,
+        totalPages: Math.ceil(count / limit),
+        limit
+      }
+    });
+  } catch (err) {
+    console.error('Error fetching prompts:', err);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+};
+
 exports.composeEmail = async (req, res) => {
   const { prompt, tone, templateId } = req.body;
 

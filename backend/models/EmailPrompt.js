@@ -24,7 +24,7 @@ const EmailPrompt = sequelize.define('EmailPrompt', {
   },
 });
 
-EmailPrompt.belongsTo(EmailTemplate, { foreignKey: 'templateId' });
+EmailPrompt.belongsTo(EmailTemplate, { foreignKey: 'templateId', as: 'template' });
 EmailTemplate.hasMany(EmailPrompt, { foreignKey: 'templateId' });
 
 module.exports = EmailPrompt;

@@ -1,5 +1,11 @@
 
-![Image](https://github.com/user-attachments/assets/e7cdf2f4-ab2a-4622-b74e-1681cef92b52)
+### Generate Emails with AI
+
+![Image](https://github.com/user-attachments/assets/239b790f-c125-4331-9f85-920d362e907f)
+
+
+### Prompts History
+![Image](https://github.com/user-attachments/assets/eaecb46f-7b5b-4461-85da-c424d0c41bfc)
 
 ### Tone Options
 
