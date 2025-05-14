@@ -13,6 +13,7 @@ interface EmailResponse {
     data: {
         id: number;
         generatedEmail: string;
+        remainingQuota: number;
     };
 }
 
@@ -21,13 +22,21 @@ interface PaginationParams {
   limit?: number;
 }
 
+const getAuthHeader = () => {
+  const token = localStorage.getItem('token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
 export const composeEmail = async (params: EmailRequest): Promise<EmailResponse> => {
-    const response = await axios.post(`${API_BASE_URL}/email/compose`, params);
+    const response = await axios.post(`${API_BASE_URL}/email/compose`, params, {
+        headers: getAuthHeader()
+    });
     return response.data;
 };
 
 export const getAllPrompts = ({ page = 1, limit = 5 }: PaginationParams = {}) => {
   return axios.get(`${API_BASE_URL}/email/prompts`, {
-    params: { page, limit }
+    params: { page, limit },
+    headers: getAuthHeader()
   });
 };

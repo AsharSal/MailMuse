@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getAllPrompts } from '../api/emailApi';
 
 interface Prompt {
@@ -27,7 +27,7 @@ export default function PromptHistory() {
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const [pagination, setPagination] = useState<PaginationData>({ total: 0, page: 1, totalPages: 1, limit: 5 });
 
-  const fetchPrompts = async (page: number) => {
+  const fetchPrompts = useCallback(async (page: number) => {
     try {
       setLoading(true);
       const response = await getAllPrompts({ page, limit: pagination.limit });
@@ -38,11 +38,11 @@ export default function PromptHistory() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [pagination.limit]);
 
   useEffect(() => {
     fetchPrompts(1);
-  }, []);
+  }, [fetchPrompts]);
 
   const handlePageChange = (newPage: number) => {
     fetchPrompts(newPage);
@@ -76,62 +76,72 @@ export default function PromptHistory() {
       <h2 className="text-3xl font-bold mb-6 text-indigo-800 border-b-2 border-indigo-200 pb-2">
         Email Generation History
       </h2>
-      <div className="space-y-6">
-        {prompts.map((prompt) => (
-          <div key={prompt.id} 
-               className="bg-white border border-indigo-100 rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
-            <div className="flex justify-between items-start mb-4">
-              <div className="font-semibold text-indigo-900">
-                {new Date(prompt.createdAt).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}
+      {prompts.length === 0 ? (
+        <div className="flex flex-col items-center justify-center p-8 bg-white rounded-xl border border-indigo-100 shadow-lg">
+          <svg className="w-16 h-16 text-indigo-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+          <h3 className="text-xl font-semibold text-indigo-900 mb-2">No Email History Yet</h3>
+          <p className="text-gray-600 text-center">Start generating emails to see your history here!</p>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {prompts.map((prompt) => (
+            <div key={prompt.id} 
+                 className="bg-white border border-indigo-100 rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
+              <div className="flex justify-between items-start mb-4">
+                <div className="font-semibold text-indigo-900">
+                  {new Date(prompt.createdAt).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </div>
+                <span className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-4 py-1 rounded-full text-sm font-medium">
+                  {prompt.tone}
+                </span>
               </div>
-              <span className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-4 py-1 rounded-full text-sm font-medium">
-                {prompt.tone}
-              </span>
-            </div>
-            {prompt.template && (
-              <div className="text-sm text-indigo-600 mb-3 bg-indigo-50 inline-block px-3 py-1 rounded-lg">
-                Template: {prompt.template.name}
+              {prompt.template && (
+                <div className="text-sm text-indigo-600 mb-3 bg-indigo-50 inline-block px-3 py-1 rounded-lg">
+                  Template: {prompt.template.name}
+                </div>
+              )}
+              <div className="mb-4">
+                <h3 className="font-medium text-gray-900 mb-2">Prompt:</h3>
+                <p className="text-gray-700 bg-gray-50 p-3 rounded-lg">{prompt.prompt}</p>
               </div>
-            )}
-            <div className="mb-4">
-              <h3 className="font-medium text-gray-900 mb-2">Prompt:</h3>
-              <p className="text-gray-700 bg-gray-50 p-3 rounded-lg">{prompt.prompt}</p>
-            </div>
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="font-medium text-gray-900">Generated Email:</h3>
-                <button
-                  onClick={() => handleCopy(prompt.id, prompt.generatedEmail)}
-                  className="inline-flex items-center px-4 py-2 border border-indigo-200 shadow-sm text-sm font-medium rounded-xl text-indigo-700 bg-white hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200"
-                >
-                  {copiedId === prompt.id ? (
-                    <span className="flex items-center text-green-600">
-                      <svg className="h-5 w-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                      </svg>
-                      Copied!
-                    </span>
-                  ) : (
-                    <span className="flex items-center">
-                      <svg className="h-5 w-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                      </svg>
-                      Copy to Clipboard
-                    </span>
-                  )}
-                </button>
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-medium text-gray-900">Generated Email:</h3>
+                  <button
+                    onClick={() => handleCopy(prompt.id, prompt.generatedEmail)}
+                    className="inline-flex items-center px-4 py-2 border border-indigo-200 shadow-sm text-sm font-medium rounded-xl text-indigo-700 bg-white hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200"
+                  >
+                    {copiedId === prompt.id ? (
+                      <span className="flex items-center text-green-600">
+                        <svg className="h-5 w-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        Copied!
+                      </span>
+                    ) : (
+                      <span className="flex items-center">
+                        <svg className="h-5 w-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                        Copy to Clipboard
+                      </span>
+                    )}
+                  </button>
+                </div>
+                <p className="text-gray-700 bg-gray-50 p-3 rounded-lg whitespace-pre-wrap">{prompt.generatedEmail}</p>
               </div>
-              <p className="text-gray-700 bg-gray-50 p-3 rounded-lg whitespace-pre-wrap">{prompt.generatedEmail}</p>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Pagination */}
       {pagination.totalPages > 1 && (

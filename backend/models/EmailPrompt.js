@@ -22,9 +22,21 @@ const EmailPrompt = sequelize.define('EmailPrompt', {
       key: 'id',
     },
   },
+  userId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'Users',
+      key: 'id',
+    },
+  }
 });
 
+// Template relationship
 EmailPrompt.belongsTo(EmailTemplate, { foreignKey: 'templateId', as: 'template' });
 EmailTemplate.hasMany(EmailPrompt, { foreignKey: 'templateId' });
+
+// User relationship
+EmailPrompt.belongsTo(require('./User'), { foreignKey: 'userId', as: 'user' });
 
 module.exports = EmailPrompt;

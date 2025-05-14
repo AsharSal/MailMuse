@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { composeEmail } from '../api/emailApi';
+import { useAuth } from '../context/AuthContext';
 
 const tones = [
   { id: 'professional', label: 'Professional' },
@@ -12,6 +13,16 @@ const tones = [
   { id: 'urgent', label: 'Urgent' },
 ];
 
+interface ApiError {
+  response?: {
+    status?: number;
+    data?: {
+      message?: string;
+    };
+  };
+  message?: string;
+}
+
 const EmailComposer: React.FC = () => {
   const [prompt, setPrompt] = useState('');
   const [selectedTone, setSelectedTone] = useState('');
@@ -19,10 +30,19 @@ const EmailComposer: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [copySuccess, setCopySuccess] = useState(false);
+  const { user, updateQuota } = useAuth();
 
   const handleGenerate = async () => {
     if (!prompt || !selectedTone) {
       setError('Please enter your prompt and select a tone.');
+      return;
+    }
+
+    const usedQuota = user?.usedQuota ?? 0;
+    const monthlyQuota = user?.monthlyQuota ?? 0;
+
+    if (usedQuota >= monthlyQuota) {
+      setError('Monthly quota exceeded. Please try again next month.');
       return;
     }
 
@@ -37,8 +57,16 @@ const EmailComposer: React.FC = () => {
       });
 
       setGeneratedEmail(response.data.generatedEmail);
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'Failed to generate email. Please try again.');
+      if (user) {
+        updateQuota(usedQuota + 1);
+      }
+    } catch (error: unknown) {
+      const apiError = error as ApiError;
+      if (apiError.response?.status === 403) {
+        setError('Monthly quota exceeded. Please try again next month.');
+      } else {
+        setError(apiError.message || 'Failed to generate email. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -55,8 +83,34 @@ const EmailComposer: React.FC = () => {
     }
   };
 
+  const quotaPercentage = user ? (user.usedQuota / user.monthlyQuota) * 100 : 0;
+  const remainingQuota = user ? user.monthlyQuota - user.usedQuota : 0;
+  const isQuotaExceeded = user ? user.usedQuota >= user.monthlyQuota : false;
+
   return (
     <div className="bg-white rounded-2xl shadow-xl p-8 space-y-8 border border-indigo-100">
+      {/* Quota Display */}
+      <div className="bg-indigo-50 rounded-lg p-4">
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-indigo-700 font-medium">Monthly Email Quota</span>
+          <span className="text-indigo-600">{remainingQuota} remaining</span>
+        </div>
+        <div className="w-full bg-indigo-200 rounded-full h-2.5">
+          <div
+            className="bg-gradient-to-r from-indigo-600 to-purple-600 h-2.5 rounded-full transition-all duration-500"
+            style={{ width: `${quotaPercentage}%` }}
+          ></div>
+        </div>
+      </div>
+
+      {isQuotaExceeded && (
+        <div className="p-4 bg-yellow-50 border-l-4 border-yellow-500 rounded-lg">
+          <p className="text-sm text-yellow-700">
+            Monthly email quota exceeded. Please try again next month when your quota resets.
+          </p>
+        </div>
+      )}
+
       <div className="space-y-6">
         <div>
           <label className="block text-lg font-semibold text-indigo-900 mb-2">
@@ -66,8 +120,9 @@ const EmailComposer: React.FC = () => {
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             placeholder="Example: Write a follow-up email to a client after our product demo yesterday"
-            className="w-full p-4 border border-indigo-200 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 min-h-[120px] transition duration-200 ease-in-out placeholder-indigo-300"
+            className="w-full p-4 border border-indigo-200 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 min-h-[120px] transition duration-200 ease-in-out placeholder-indigo-300 disabled:bg-gray-50 disabled:text-gray-500 disabled:border-gray-200"
             rows={4}
+            disabled={isQuotaExceeded}
           />
         </div>
 
@@ -80,10 +135,13 @@ const EmailComposer: React.FC = () => {
               <button
                 key={tone.id}
                 onClick={() => setSelectedTone(tone.id)}
+                disabled={isQuotaExceeded}
                 className={`px-4 py-2.5 rounded-xl font-medium transition-all duration-200 ${
                   selectedTone === tone.id
                     ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-200'
                     : 'bg-white text-indigo-700 hover:bg-indigo-50 border border-indigo-200'
+                } ${
+                  isQuotaExceeded ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
               >
                 {tone.label}
@@ -94,7 +152,7 @@ const EmailComposer: React.FC = () => {
 
         <button
           onClick={handleGenerate}
-          disabled={loading}
+          disabled={loading || isQuotaExceeded}
           className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-4 rounded-xl hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl font-medium text-lg"
         >
           {loading ? (

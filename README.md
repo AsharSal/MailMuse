@@ -1,7 +1,7 @@
 
 ### Generate Emails with AI
 
-![Image](https://github.com/user-attachments/assets/239b790f-c125-4331-9f85-920d362e907f)
+![Image](https://github.com/user-attachments/assets/76b1a256-5f45-41a6-ae8e-196cb6f28c5b)
 
 
 ### Prompts History
